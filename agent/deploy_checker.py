@@ -33,14 +33,30 @@ def refresh_deploy_status() -> int:
         except Exception:
             continue
 
-        success = snowflake_tools.get_last_success(pipeline, after=detected)
+        try:
+            success = snowflake_tools.get_last_success(pipeline, after=detected)
+        except Exception as exc:
+            log("deploy", f"[{pipeline.pipeline_id}] incident {incident_id[:8]} — check skipped: {exc}")
+            continue
+
         if success:
             end_time = success.get("query_end_time")
-            end_iso = str(end_time) if end_time else datetime.now(timezone.utc).isoformat()
-            try:
-                resolved = datetime.fromisoformat(end_iso.replace("Z", "+00:00"))
+            if isinstance(end_time, datetime):
+                resolved = end_time
                 if resolved.tzinfo is None:
                     resolved = resolved.replace(tzinfo=timezone.utc)
+                else:
+                    resolved = resolved.astimezone(timezone.utc)
+            elif end_time:
+                resolved = datetime.fromisoformat(str(end_time).replace("Z", "+00:00"))
+                if resolved.tzinfo is None:
+                    resolved = resolved.replace(tzinfo=timezone.utc)
+                else:
+                    resolved = resolved.astimezone(timezone.utc)
+            else:
+                resolved = datetime.now(timezone.utc)
+            end_iso = resolved.isoformat()
+            try:
                 ttf = int((resolved - detected).total_seconds())
             except Exception:
                 ttf = ""
@@ -57,7 +73,11 @@ def refresh_deploy_status() -> int:
             continue
 
         if inc.get("status") == "pr_opened":
-            still_failing = snowflake_tools.has_failure_after(pipeline, after=detected)
+            try:
+                still_failing = snowflake_tools.has_failure_after(pipeline, after=detected)
+            except Exception as exc:
+                log("deploy", f"[{pipeline.pipeline_id}] incident {incident_id[:8]} — failure check skipped: {exc}")
+                continue
             if still_failing and inc.get("pr_opened_at"):
                 update_deploy_status(incident_id, deploy_status="red", status="failed")
                 log("deploy", f"[{pipeline.pipeline_id}] incident {incident_id[:8]} — still failing (red)")

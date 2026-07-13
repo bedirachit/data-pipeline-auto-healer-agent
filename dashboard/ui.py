@@ -2,12 +2,33 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 import streamlit as st
 
 THEME_PATH = Path(__file__).parent / "theme.css"
+
+
+def format_utc_datetime(value: str | datetime | None, *, include_seconds: bool = True) -> str:
+    """Format a timestamp for display in UTC (e.g. '13 Jul 2026, 13:49:20 UTC')."""
+    if value is None or value == "" or value == "—":
+        return "—"
+    try:
+        if isinstance(value, datetime):
+            dt = value
+        else:
+            raw = str(value).strip()
+            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
+        fmt = "%d %b %Y, %H:%M:%S UTC" if include_seconds else "%d %b %Y, %H:%M UTC"
+        return dt.strftime(fmt)
+    except Exception:
+        return str(value)[:19]
 
 
 def inject_theme() -> None:
@@ -71,7 +92,7 @@ def render_pipeline_cards(
 | **Snowflake** | `{p.snowflake_database}.{p.snowflake_schema}.{p.dbt_name}` |
 | **GitHub repo** | [{p.github_repo_url}]({p.github_repo_url}) |
 | **Model file** | `{p.model_file_path}` |
-| **Registered** | {p.created_at[:19] if p.created_at else "—"} |
+| **Registered** | {format_utc_datetime(p.created_at)} |
                     """
                 )
 
@@ -84,6 +105,21 @@ def render_pipeline_cards(
                 with c2:
                     if st.button("Cancel", key=f"cancel_{p.pipeline_id}"):
                         on_delete_cancel()
+
+
+def render_app_sidebar() -> None:
+    """Sidebar branding, navigation, and sign-out."""
+    from dashboard.auth import logout_button
+
+    st.sidebar.markdown("### ⚡ Auto-Healer")
+    st.sidebar.caption(f"Signed in as **{st.session_state.get('username', 'admin')}**")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Navigation**")
+    st.sidebar.page_link("pages/1_Dashboard.py", label="Dashboard", use_container_width=True)
+    st.sidebar.page_link("pages/2_Pipelines.py", label="Pipelines", use_container_width=True)
+    st.sidebar.page_link("pages/3_Agent.py", label="Agent", use_container_width=True)
+    st.sidebar.markdown("---")
+    logout_button()
 
 
 def page_header(title: str, subtitle: str = "") -> None:

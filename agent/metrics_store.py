@@ -180,7 +180,7 @@ def update_deploy_status(
 def dashboard_kpis() -> dict[str, Any]:
     incidents = list_incidents()
     open_count = sum(1 for i in incidents if i.get("status") == "open")
-    pr_count = sum(1 for i in incidents if i.get("status") == "pr_opened")
+    pr_count = sum(1 for i in incidents if i.get("pr_url"))
     deployed = sum(
         1 for i in incidents if i.get("status") == "deployed" and i.get("deploy_status") == "green"
     )

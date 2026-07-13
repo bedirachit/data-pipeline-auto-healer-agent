@@ -41,7 +41,6 @@ def print_mttr() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Data Pipeline Auto-Healer Demo")
     parser.add_argument("--scenario", choices=["1", "2", "3"], help="Failure scenario")
-    parser.add_argument("--rules-only", action="store_true", help="Use rule-based healer")
     parser.add_argument("--skip-baseline", action="store_true")
     args = parser.parse_args()
 
@@ -68,10 +67,7 @@ def main() -> None:
     run([py, str(SCRIPTS / "run_pipeline.py"), "--expect", "failed"], check=False)
 
     step("5. Start auto-healer agent")
-    heal_cmd = [py, "-m", "agent.main", "heal-once"]
-    if args.rules_only:
-        heal_cmd.append("--rules-only")
-    run(heal_cmd, check=False)
+    run([py, "-m", "agent.main", "heal-once"], check=False)
 
     step("6. Human review — merge PR on GitHub, then press Enter")
     input("After merging PR, press Enter to re-run dbt...")

@@ -15,16 +15,39 @@
     background: linear-gradient(160deg, #0b1220 0%, #070d18 40%, #050a12 100%) !important;
 }
 
-/* Hide default white header bar */
+/* Header — keep transparent but leave sidebar toggle visible */
 header[data-testid="stHeader"],
 [data-testid="stHeader"] {
     background: transparent !important;
     border: none !important;
 }
 
-[data-testid="stToolbar"],
+/* Hide only the deploy/overflow menu — NOT the whole toolbar (sidebar toggle lives here) */
+[data-testid="stToolbar"] button[kind="header"]:not([data-testid="baseButton-headerNoPadding"]) {
+    opacity: 0.3;
+}
+
 [data-testid="stDecoration"] {
     display: none !important;
+}
+
+/* Hide default multipage nav — custom links in sidebar */
+[data-testid="stSidebarNav"] {
+    display: none !important;
+}
+
+/* Sidebar expand button when collapsed — must stay visible */
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"],
+button[data-testid="stSidebarCollapsedControl"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: #00c8ff !important;
+    background: #0f1f35 !important;
+    border: 1px solid #2a5080 !important;
+    border-radius: 8px !important;
+    z-index: 9999 !important;
 }
 
 .block-container {
@@ -284,6 +307,51 @@ div[data-baseweb="select"] > div {
 .status-green { color: #3dffa0 !important; font-weight: 700 !important; }
 .status-red   { color: #ff6b7a !important; font-weight: 700 !important; }
 .status-pending { color: #ffc04d !important; font-weight: 700 !important; }
+
+/* ── Agent control status card ── */
+.agent-status-card {
+    background: linear-gradient(135deg, #0d1a2d 0%, #0a1422 100%);
+    border: 1px solid #254a70;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+}
+.agent-status-card .status-line {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin: 0 0 0.35rem 0;
+}
+.agent-status-card .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    color: #7a9fbf;
+    font-size: 0.85rem;
+    margin: 0;
+}
+.agent-status-card .meta-row code {
+    background: #152638;
+    border: 1px solid #2a5080;
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+    color: #c5dff5;
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 0.82rem;
+}
+
+/* ── Tooltips (help text on widgets) ── */
+div[data-baseweb="tooltip"],
+div[data-baseweb="popover"] {
+    background: #0f1f35 !important;
+    color: #e8f4ff !important;
+    border: 1px solid #3a5a80 !important;
+}
+
+div[data-baseweb="tooltip"] div,
+div[data-baseweb="popover"] div {
+    color: #e8f4ff !important;
+}
 
 /* ── Log panel ── */
 .log-panel {

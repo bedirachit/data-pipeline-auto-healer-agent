@@ -74,7 +74,6 @@ The watcher ignores failures from before agent start. Only new failures after `w
 
 ```powershell
 python -m agent.main watch-multi          # poll ALL registered pipelines
-python -m agent.main watch-multi --rules-only
 python -m agent.main heal-once
 python -m agent.main list-failures
 ```

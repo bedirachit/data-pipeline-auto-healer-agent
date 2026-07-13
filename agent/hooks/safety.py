@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from agent.config import AUDIT_LOG, PROJECT_ROOT
-from agent.logging_utils import log
+from agent.logging_utils import log, tool_log
 
 SENSITIVE_FILES = {".env", ".env.local"}
 ALLOWED_WRITE_PREFIXES = (
@@ -35,6 +35,7 @@ def _redact_args(tool_input: dict) -> dict:
 async def audit_log_pre(input_data, tool_use_id, context):
     tool = input_data.get("tool_name", "")
     log("audit", f"Tool call: {tool}")
+    tool_log(tool)
     _append_audit(
         {
             "event": "PreToolUse",

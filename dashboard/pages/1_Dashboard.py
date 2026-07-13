@@ -9,7 +9,26 @@ from agent.deploy_checker import refresh_deploy_status
 from agent.metrics_store import dashboard_kpis, list_incidents
 from agent.pipeline_registry import list_pipelines
 from dashboard.auth import require_login
-from dashboard.ui import inject_theme, page_header
+from dashboard.ui import format_utc_datetime, inject_theme, page_header, render_app_sidebar
+
+
+def _format_downtime_minutes(sec_str: str) -> str:
+    if not sec_str or sec_str == "—":
+        return "—"
+    try:
+        minutes = int(sec_str) / 60
+        return f"{minutes:.1f} min" if minutes < 10 else f"{minutes:.0f} min"
+    except (TypeError, ValueError):
+        return "—"
+
+
+def _format_time_to_pr(sec_str: str) -> str:
+    if not sec_str or sec_str == "—":
+        return "—"
+    try:
+        return f"{int(sec_str)} s"
+    except (TypeError, ValueError):
+        return "—"
 
 st.set_page_config(page_title="Dashboard | Auto-Healer", page_icon="⚡", layout="wide")
 inject_theme()
@@ -17,15 +36,23 @@ inject_theme()
 if not require_login():
     st.stop()
 
+render_app_sidebar()
 page_header("Dashboard", "Live status across all tracked dbt pipelines")
 
 col_refresh, _ = st.columns([1, 5])
 with col_refresh:
     if st.button("Refresh status", type="primary"):
-        refresh_deploy_status()
+        try:
+            n = refresh_deploy_status()
+            st.success(f"Updated {n} incident(s).")
+        except Exception as exc:
+            st.error(f"Could not refresh from Snowflake: {exc}")
         st.rerun()
 
-refresh_deploy_status()
+try:
+    refresh_deploy_status()
+except Exception as exc:
+    st.error(f"Could not refresh deploy status from Snowflake: {exc}")
 
 pipelines = list_pipelines()
 kpis = dashboard_kpis()
@@ -54,7 +81,7 @@ for p in pipelines:
     if not pipe_incidents:
         status_label = "🟢 Idle"
     elif deploy == "green":
-        status_label = "🟢 Running"
+        status_label = "🟢 OK"
     elif deploy == "red":
         status_label = "🔴 Failed"
     elif latest.get("status") in ("open", "pr_opened"):
@@ -67,11 +94,8 @@ for p in pipelines:
             "Pipeline": p.dbt_name,
             "ID": p.pipeline_id,
             "Status": status_label,
-            "Last Failure": latest.get("detected_at", "—")[:19] if latest.get("detected_at") else "—",
-            "Last Success": latest.get("last_success_at", "—")[:19] if latest.get("last_success_at") else "—",
-            "Open PR": latest.get("pr_url", "—") if latest.get("pr_url") else "—",
-            "Time to PR (s)": latest.get("time_to_pr_sec", "—") or "—",
-            "Time to Fix (s)": latest.get("time_to_fix_sec", "—") or "—",
+            "Last Failure": format_utc_datetime(latest.get("detected_at")),
+            "Last Success": format_utc_datetime(latest.get("last_success_at")),
         }
     )
 
@@ -83,8 +107,35 @@ else:
 st.subheader("Recent Incidents")
 if incidents:
     df = pd.DataFrame(incidents)[
-        ["incident_id", "pipeline_id", "detected_at", "error_summary", "status", "deploy_status", "pr_url"]
+        [
+            "incident_id",
+            "pipeline_id",
+            "detected_at",
+            "error_summary",
+            "status",
+            "deploy_status",
+            "pr_url",
+            "time_to_pr_sec",
+            "time_to_fix_sec",
+        ]
     ].head(20)
+    df["detected_at"] = df["detected_at"].apply(format_utc_datetime)
+    df["status"] = df["status"].replace({"deployed": "RESOLVED"})
+    df["time_to_pr_sec"] = df["time_to_pr_sec"].apply(_format_time_to_pr)
+    df["time_to_fix_sec"] = df["time_to_fix_sec"].apply(_format_downtime_minutes)
+    df = df.rename(
+        columns={
+            "incident_id": "Incident ID",
+            "pipeline_id": "Pipeline ID",
+            "detected_at": "Detected At",
+            "error_summary": "Error Summary",
+            "status": "Status",
+            "deploy_status": "Deploy Status",
+            "pr_url": "PR URL",
+            "time_to_pr_sec": "Time to PR",
+            "time_to_fix_sec": "Downtime",
+        }
+    )
     st.table(df.head(20))
 else:
     st.info("No incidents recorded yet.")

@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import snowflake.connector
 
 from agent.config import env, snowflake_connect_kwargs, DBT_PROJECT_OBJECT
 from agent.pipeline_registry import PipelineConfig
+
+# Snowflake DBT_PROJECT_EXECUTION_HISTORY retains ~7 days; stay inside that window.
+MAX_DBT_HISTORY_MINUTES = 6 * 24 * 60
 
 
 def _connect():
@@ -34,6 +37,27 @@ def _parts_from_pipeline(
     return db, sch, fq
 
 
+def _cap_history_minutes(minutes: int) -> int:
+    return min(max(minutes, 1), MAX_DBT_HISTORY_MINUTES)
+
+
+def _ensure_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _clamp_to_history_window(dt: datetime) -> datetime:
+    """Earliest time Snowflake DBT history allows for START_TIME_RANGE_START."""
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    oldest = now - timedelta(days=6, hours=23)
+    return max(dt, oldest)
+
+
 def get_recent_failures(
     minutes: int = 30,
     limit: int = 10,
@@ -44,6 +68,7 @@ def get_recent_failures(
     dbt_name: str | None = None,
 ) -> list[dict[str, Any]]:
     """Return recent failed dbt runs for a pipeline."""
+    minutes = _cap_history_minutes(minutes)
     db, sch, project = _parts_from_pipeline(pipeline, database, schema, dbt_name)
     rows = _get_dbt_project_failures(db, sch, project, minutes=minutes, limit=limit, since=since)
     if rows:
@@ -61,6 +86,7 @@ def _get_dbt_project_failures(
     limit: int = 10,
     since: datetime | None = None,
 ) -> list[dict[str, Any]]:
+    minutes = _cap_history_minutes(minutes)
     since_clause = "AND query_start_time > %(since)s" if since else ""
     sql = f"""
     SELECT
@@ -90,7 +116,7 @@ def _get_dbt_project_failures(
         "limit": limit,
     }
     if since:
-        params["since"] = since
+        params["since"] = _ensure_utc(since)
     with _connect() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
@@ -103,16 +129,21 @@ def get_last_success(
     after: datetime,
 ) -> dict[str, Any] | None:
     """Latest successful dbt run for pipeline after a given time."""
+    after_utc = _ensure_utc(after)
+    now = datetime.now(timezone.utc)
+    minutes_back = int((now - _clamp_to_history_window(after_utc)).total_seconds() / 60) + 1
+    minutes_back = _cap_history_minutes(minutes_back)
     sql = """
     SELECT query_id, query_end_time, state
     FROM TABLE(SNOWFLAKE.INFORMATION_SCHEMA.DBT_PROJECT_EXECUTION_HISTORY(
         DATABASE => %(database)s,
         SCHEMA => %(schema)s,
         OBJECT_NAME => %(project)s,
-        START_TIME_RANGE_START => %(after)s,
+        START_TIME_RANGE_START => DATEADD('minute', -%(minutes_back)s, CURRENT_TIMESTAMP()),
         RESULT_LIMIT => 50
     ))
     WHERE state = 'SUCCESS'
+      AND query_end_time > %(after)s
     ORDER BY query_end_time DESC
     LIMIT 1
     """
@@ -120,7 +151,8 @@ def get_last_success(
         "database": pipeline.snowflake_database,
         "schema": pipeline.snowflake_schema,
         "project": pipeline.dbt_name,
-        "after": after,
+        "minutes_back": minutes_back,
+        "after": after_utc,
     }
     with _connect() as conn:
         with conn.cursor() as cur:
@@ -138,7 +170,7 @@ def has_failure_after(
 ) -> bool:
     """True if pipeline had a failure after the given time."""
     rows = get_recent_failures(
-        minutes=60 * 24 * 7,
+        minutes=MAX_DBT_HISTORY_MINUTES,
         limit=5,
         since=after,
         pipeline=pipeline,
@@ -154,6 +186,7 @@ def _get_query_history_failures(
     database: str | None = None,
     schema: str | None = None,
 ) -> list[dict[str, Any]]:
+    minutes = _cap_history_minutes(minutes)
     tag = env("AGENT_DEMO_TAG", "demo_sales_etl")
     model = env("DBT_MODEL_SELECT", "sales_summary")
     since_clause = "AND start_time > %(since)s" if since else ""
@@ -183,7 +216,7 @@ def _get_query_history_failures(
         "project_pattern": f"%{project.lower()}%",
     }
     if since:
-        params["since"] = since
+        params["since"] = _ensure_utc(since)
     with _connect() as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)

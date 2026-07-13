@@ -42,7 +42,7 @@ def require_login() -> bool:
                     if check_credentials(username, password):
                         st.session_state.authenticated = True
                         st.session_state.username = username
-                        st.rerun()
+                        st.switch_page("pages/1_Dashboard.py")
                     else:
                         st.error("Invalid username or password")
 

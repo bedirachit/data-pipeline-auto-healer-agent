@@ -8,11 +8,15 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone
-from pathlib import Path
 
 from agent.config import AGENT_PID_FILE, PROJECT_ROOT
 
 _meta_file = AGENT_PID_FILE.with_suffix(".meta")
+
+if os.name == "nt":
+    _DETACHED_FLAGS = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+else:
+    _DETACHED_FLAGS = 0
 
 
 def _read_meta() -> dict[str, str]:
@@ -22,11 +26,8 @@ def _read_meta() -> dict[str, str]:
     return dict(line.split("=", 1) for line in lines if "=" in line)
 
 
-def _write_meta(started_at: str, rules_only: bool) -> None:
-    _meta_file.write_text(
-        f"started_at={started_at}\nrules_only={'true' if rules_only else 'false'}\n",
-        encoding="utf-8",
-    )
+def _write_meta(started_at: str) -> None:
+    _meta_file.write_text(f"started_at={started_at}\n", encoding="utf-8")
 
 
 def _clear_meta() -> None:
@@ -46,48 +47,57 @@ def _is_running(pid: int) -> bool:
 
 def get_status() -> dict:
     if not AGENT_PID_FILE.exists():
-        return {"running": False, "pid": None, "started_at": None, "rules_only": False}
+        return {"running": False, "pid": None, "started_at": None}
     try:
         pid = int(AGENT_PID_FILE.read_text(encoding="utf-8").strip())
     except ValueError:
         _clear_meta()
-        return {"running": False, "pid": None, "started_at": None, "rules_only": False}
+        return {"running": False, "pid": None, "started_at": None}
     if not _is_running(pid):
         _clear_meta()
-        return {"running": False, "pid": None, "started_at": None, "rules_only": False}
+        return {"running": False, "pid": None, "started_at": None}
     meta = _read_meta()
     return {
         "running": True,
         "pid": pid,
         "started_at": meta.get("started_at"),
-        "rules_only": meta.get("rules_only") == "true",
     }
 
 
-def start_agent(rules_only: bool = True) -> dict:
+def start_agent() -> dict:
     status = get_status()
     if status["running"]:
         return {"ok": False, "message": f"Agent already running (PID {status['pid']})", **status}
 
     cmd = [sys.executable, "-m", "agent.main", "watch-multi"]
-    if rules_only:
-        cmd.append("--rules-only")
 
     log_path = PROJECT_ROOT / "agent" / "audit" / "agent_process.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    log_file = open(log_path, "a", encoding="utf-8")
 
-    proc = subprocess.Popen(
-        cmd,
-        cwd=str(PROJECT_ROOT),
-        stdout=log_file,
-        stderr=subprocess.STDOUT,
-        creationflags=0,
-    )
+    with open(log_path, "a", encoding="utf-8") as log_file:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(PROJECT_ROOT),
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            creationflags=_DETACHED_FLAGS,
+            start_new_session=os.name != "nt",
+        )
+
     AGENT_PID_FILE.write_text(str(proc.pid), encoding="utf-8")
-    _write_meta(datetime.now(timezone.utc).isoformat(), rules_only)
-    time.sleep(0.5)
-    return {"ok": True, "message": f"Agent started (PID {proc.pid})", "pid": proc.pid, "rules_only": rules_only}
+    _write_meta(datetime.now(timezone.utc).isoformat())
+    time.sleep(0.3)
+
+    if not _is_running(proc.pid):
+        _clear_meta()
+        tail = log_path.read_text(encoding="utf-8", errors="ignore").splitlines()[-5:]
+        detail = "\n".join(tail) if tail else "No process output captured."
+        return {
+            "ok": False,
+            "message": f"Agent failed to start. Check agent/audit/agent_process.log\n{detail}",
+        }
+
+    return {"ok": True, "message": f"Agent started (PID {proc.pid})", "pid": proc.pid}
 
 
 def stop_agent() -> dict:
@@ -99,12 +109,17 @@ def stop_agent() -> dict:
     pid = status["pid"]
     try:
         if os.name == "nt":
-            subprocess.run(["taskkill", "/F", "/PID", str(pid)], check=False, capture_output=True)
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                check=False,
+                capture_output=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
         else:
-            os.kill(pid, signal.SIGTERM)
+            os.killpg(os.getpgid(pid), signal.SIGTERM)
             time.sleep(0.5)
             if _is_running(pid):
-                os.kill(pid, signal.SIGKILL)
+                os.killpg(os.getpgid(pid), signal.SIGKILL)
     except Exception as exc:
         return {"ok": False, "message": str(exc)}
     _clear_meta()

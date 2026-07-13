@@ -13,7 +13,7 @@ def log(stage: str, message: str) -> None:
 
 
 def chat_log(role: str, message: str) -> None:
-    """Append user/assistant text to agent_chat.log for dashboard display."""
+    """Append user/assistant/tool text to agent_chat.log for dashboard display."""
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     line = f"[{ts}] {role.upper()}: {message.strip()}\n"
     CHAT_LOG.parent.mkdir(parents=True, exist_ok=True)
@@ -22,8 +22,22 @@ def chat_log(role: str, message: str) -> None:
     log(role, message[:200])
 
 
+def tool_log(tool_name: str) -> None:
+    """Log a tool invocation with a readable name."""
+    name = tool_name.removeprefix("mcp__healer__")
+    if name in ("ToolSearch",):
+        return
+    chat_log("tool", name)
+
+
 def tail_chat_log(max_lines: int = 200) -> str:
     if not CHAT_LOG.exists():
         return "No agent chat logs yet. Start the agent and trigger a failure."
     lines = CHAT_LOG.read_text(encoding="utf-8", errors="ignore").splitlines()
     return "\n".join(lines[-max_lines:])
+
+
+def clear_chat_log() -> None:
+    """Truncate the dashboard chat log."""
+    CHAT_LOG.parent.mkdir(parents=True, exist_ok=True)
+    CHAT_LOG.write_text("", encoding="utf-8")

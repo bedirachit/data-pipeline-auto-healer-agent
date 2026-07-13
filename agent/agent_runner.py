@@ -77,7 +77,7 @@ def _extract_chat_from_message(message) -> None:
             if text.strip():
                 chat_log(role, text.strip())
         elif block_type == "ToolUseBlock":
-            pass  # skip tool calls
+            pass  # logged via PreToolUse hook
         elif block_type == "ToolResultBlock":
             pass  # skip tool results
 
