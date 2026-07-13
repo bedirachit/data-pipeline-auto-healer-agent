@@ -1,0 +1,15 @@
+# Local dbt CLI only — used by pipeline/scripts/run_pipeline.py (DBT_PROFILES_DIR points here)
+# env_var is supported when running dbt from your machine, NOT in Snowflake Snowsight workspace
+
+demo_sales_etl:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'DEMO_DB') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'DEMO_SCHEMA') }}"

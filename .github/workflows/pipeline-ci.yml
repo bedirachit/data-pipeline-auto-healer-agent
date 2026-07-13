@@ -1,0 +1,35 @@
+name: Pipeline CI
+
+on:
+  pull_request:
+    paths:
+      - "pipeline/**"
+  push:
+    branches: [main]
+    paths:
+      - "pipeline/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install dbt-snowflake pytest sqlparse
+
+      - name: dbt parse
+        working-directory: pipeline/dbt
+        env:
+          DBT_PROFILES_DIR: ../dbt_local
+          SNOWFLAKE_ACCOUNT: placeholder
+          SNOWFLAKE_USER: placeholder
+          SNOWFLAKE_PASSWORD: placeholder
+        run: dbt parse
+
+      - name: Run pipeline unit tests
+        run: pytest pipeline/tests -q

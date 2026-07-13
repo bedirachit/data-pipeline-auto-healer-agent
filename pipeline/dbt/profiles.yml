@@ -1,0 +1,15 @@
+# Snowflake Snowsight / native dbt Projects — use literal values (env_var NOT supported)
+# See: https://docs.snowflake.com/en/user-guide/data-engineering/dbt-projects-on-snowflake-limitations
+
+demo_sales_etl:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "snowflake"
+      user: "snowflake"
+      password: "snowflake"
+      role: ACCOUNTADMIN
+      database: DEMO_DB
+      warehouse: COMPUTE_WH
+      schema: DEMO_SCHEMA

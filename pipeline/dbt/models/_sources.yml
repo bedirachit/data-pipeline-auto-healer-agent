@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: demo
+    description: Demo ecommerce source tables loaded outside dbt
+    database: DEMO_DB
+    schema: DEMO_SCHEMA
+    tables:
+      - name: raw_sales
+      - name: dim_product

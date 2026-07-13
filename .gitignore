@@ -179,3 +179,10 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Dashboard runtime data
+data/pipelines.csv
+data/incidents.csv
+data/agent.pid
+data/agent.pid.meta
+data/*.lock

@@ -1,0 +1,2 @@
+-- Scenario 2: Divide by zero - replace transform with failing expression
+-- Run via inject_divide_by_zero.py which patches sales_summary.sql

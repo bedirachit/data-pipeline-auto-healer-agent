@@ -1,0 +1,12 @@
+{
+  "name": "pipeline-auto-healer-demo",
+  "private": true,
+  "scripts": {
+    "setup:snowflake": "playwright test demo/playwright/setup_snowflake.spec.ts",
+    "demo:walkthrough": "playwright test demo/playwright/demo_walkthrough.spec.ts --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "dotenv": "^16.4.0"
+  }
+}

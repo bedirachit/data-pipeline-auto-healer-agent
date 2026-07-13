@@ -1,0 +1,310 @@
+/* Pipeline Auto-Healer — dark futuristic theme (high contrast) */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Base ── */
+.stApp,
+[data-testid="stAppViewContainer"],
+.main,
+.block-container {
+    font-family: 'Inter', system-ui, sans-serif !important;
+    color: #e8f4ff !important;
+}
+
+.stApp {
+    background: linear-gradient(160deg, #0b1220 0%, #070d18 40%, #050a12 100%) !important;
+}
+
+/* Hide default white header bar */
+header[data-testid="stHeader"],
+[data-testid="stHeader"] {
+    background: transparent !important;
+    border: none !important;
+}
+
+[data-testid="stToolbar"],
+[data-testid="stDecoration"] {
+    display: none !important;
+}
+
+.block-container {
+    padding-top: 1.5rem !important;
+    padding-bottom: 2rem !important;
+    max-width: 1200px !important;
+}
+
+/* ── Typography ── */
+h1, h2, h3, h4, p, label, span, li, .stMarkdown {
+    color: #e8f4ff !important;
+}
+
+.hero-title {
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em;
+    color: #ffffff !important;
+    margin: 0 0 0.35rem 0 !important;
+    background: none !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+.hero-title::after {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 3px;
+    margin-top: 8px;
+    background: linear-gradient(90deg, #00b4ff, #7c5cff);
+    border-radius: 2px;
+}
+
+.subtitle {
+    color: #94b8d9 !important;
+    font-size: 1rem !important;
+    margin-bottom: 1.25rem !important;
+}
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: #0a1424 !important;
+    border-right: 1px solid #1e3a5f !important;
+}
+
+[data-testid="stSidebar"] * {
+    color: #c8dff5 !important;
+}
+
+[data-testid="stSidebarNav"] {
+    background: transparent !important;
+}
+
+[data-testid="stSidebarNav"] a {
+    color: #b8d4f0 !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+}
+
+[data-testid="stSidebarNav"] a:hover,
+[data-testid="stSidebarNav"] a[aria-selected="true"] {
+    color: #00c8ff !important;
+    background: rgba(0, 180, 255, 0.12) !important;
+}
+
+[data-testid="stSidebarNav"] span {
+    color: inherit !important;
+}
+
+/* Streamlit bordered container (login card, panels) */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #0f1f35 !important;
+    border-color: #2a5080 !important;
+    border-radius: 14px !important;
+    padding: 0.75rem 1rem !important;
+    margin-bottom: 0.75rem !important;
+}
+
+[data-testid="stVerticalBlockBorderWrapper"] label {
+    color: #c5dff5 !important;
+}
+
+[data-testid="stExpander"] details summary {
+    font-size: 0.875rem !important;
+    color: #00b4ff !important;
+}
+
+/* ── Forms & inputs ── */
+[data-testid="stForm"] {
+    border: none !important;
+    padding: 0 !important;
+}
+
+.stTextInput label,
+.stTextInput > label,
+[data-testid="stWidgetLabel"] {
+    color: #c5dff5 !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.35rem !important;
+}
+
+.stTextInput input,
+input[type="text"],
+input[type="password"] {
+    background: #0d1e33 !important;
+    color: #ffffff !important;
+    border: 1px solid #3a6288 !important;
+    border-radius: 10px !important;
+    padding: 0.65rem 0.85rem !important;
+    font-size: 0.95rem !important;
+    caret-color: #00c8ff !important;
+}
+
+.stTextInput input:focus,
+input:focus {
+    border-color: #00b4ff !important;
+    box-shadow: 0 0 0 2px rgba(0, 180, 255, 0.25) !important;
+    outline: none !important;
+}
+
+.stTextInput input::placeholder {
+    color: #5a7a99 !important;
+}
+
+/* ── Buttons (regular + form submit) ── */
+.stButton > button,
+[data-testid="stFormSubmitButton"] > button,
+[data-testid="baseButton-primary"] {
+    background: linear-gradient(180deg, #0099dd 0%, #0077bb 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #00aaff !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    padding: 0.6rem 1.25rem !important;
+    letter-spacing: 0.02em;
+    transition: filter 0.15s, box-shadow 0.15s;
+}
+
+.stButton > button:hover,
+[data-testid="stFormSubmitButton"] > button:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 20px rgba(0, 160, 255, 0.35) !important;
+    color: #ffffff !important;
+}
+
+.stButton > button p,
+[data-testid="stFormSubmitButton"] > button p,
+.stButton > button span,
+[data-testid="stFormSubmitButton"] > button span {
+    color: #ffffff !important;
+}
+
+.stButton > button[kind="secondary"] {
+    background: #152a42 !important;
+    border-color: #3a6288 !important;
+    color: #e8f4ff !important;
+}
+
+/* ── Metrics ── */
+[data-testid="stMetric"] {
+    background: #0f1f35 !important;
+    border: 1px solid #254a70 !important;
+    border-radius: 12px !important;
+    padding: 1rem 1.1rem !important;
+    box-shadow: none !important;
+}
+
+[data-testid="stMetricLabel"] {
+    color: #8ab0d0 !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+[data-testid="stMetricValue"] {
+    color: #00c8ff !important;
+    font-size: 1.75rem !important;
+    font-weight: 700 !important;
+}
+
+/* ── DataFrames / tables ── */
+[data-testid="stDataFrame"] {
+    border: 1px solid #254a70 !important;
+    border-radius: 10px !important;
+    overflow: hidden;
+}
+
+/* Do NOT blanket-style inner divs — breaks Glide grid rendering */
+
+[data-testid="stTable"] {
+    border: 1px solid #254a70 !important;
+    border-radius: 10px !important;
+}
+
+[data-testid="stTable"] table {
+    color: #e8f4ff !important;
+}
+
+[data-testid="stTable"] thead tr th {
+    background: #152a42 !important;
+    color: #8ab0d0 !important;
+    font-size: 0.8rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+[data-testid="stTable"] tbody tr td {
+    background: #0d1a2a !important;
+    color: #e8f4ff !important;
+    border-color: #1e3a5f !important;
+}
+
+/* ── Alerts ── */
+[data-testid="stAlert"] {
+    border-radius: 10px !important;
+}
+
+div[data-baseweb="notification"] {
+    background: #0f2035 !important;
+    color: #e8f4ff !important;
+    border: 1px solid #2a5080 !important;
+}
+
+/* ── Expanders ── */
+[data-testid="stExpander"] {
+    background: #0f1f35 !important;
+    border: 1px solid #254a70 !important;
+    border-radius: 12px !important;
+}
+
+[data-testid="stExpander"] summary {
+    color: #e8f4ff !important;
+    font-weight: 600 !important;
+}
+
+/* ── Toggle ── */
+.stCheckbox label, .stToggle label {
+    color: #c5dff5 !important;
+}
+
+/* ── Selectbox ── */
+.stSelectbox label {
+    color: #c5dff5 !important;
+    font-weight: 600 !important;
+}
+
+div[data-baseweb="select"] > div {
+    background: #0d1e33 !important;
+    border-color: #3a6288 !important;
+    color: #ffffff !important;
+}
+
+/* ── Status badges ── */
+.status-green { color: #3dffa0 !important; font-weight: 700 !important; }
+.status-red   { color: #ff6b7a !important; font-weight: 700 !important; }
+.status-pending { color: #ffc04d !important; font-weight: 700 !important; }
+
+/* ── Log panel ── */
+.log-panel {
+    background: #080f18 !important;
+    border: 1px solid #254a70 !important;
+    border-radius: 10px !important;
+    padding: 1rem 1.1rem !important;
+    font-family: 'JetBrains Mono', Consolas, monospace !important;
+    font-size: 0.82rem !important;
+    line-height: 1.55 !important;
+    max-height: 440px !important;
+    overflow-y: auto !important;
+    white-space: pre-wrap !important;
+    color: #b8d8f0 !important;
+}
+
+/* ── Info box override ── */
+[data-testid="stAlert"][data-baseweb="notification"] {
+    background-color: #0f2540 !important;
+}
+
+.stAlert > div {
+    color: #c5dff5 !important;
+}

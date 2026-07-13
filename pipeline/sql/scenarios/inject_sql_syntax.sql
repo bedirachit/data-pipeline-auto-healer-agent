@@ -1,0 +1,2 @@
+-- Scenario 3: SQL syntax error - missing comma
+-- Applied via inject_sql_syntax.py which patches sales_summary.sql
