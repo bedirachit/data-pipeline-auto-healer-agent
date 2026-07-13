@@ -2,10 +2,27 @@
 
 from __future__ import annotations
 
+import base64
+from pathlib import Path
+
 import streamlit as st
 
 from agent.config import env
 from dashboard.ui import hide_chrome_for_login
+
+LOGO_PATH = Path(__file__).parent / "assets" / "phdata-logo.png"
+
+
+def _login_logo_html() -> str:
+    if not LOGO_PATH.exists():
+        return ""
+    encoded = base64.b64encode(LOGO_PATH.read_bytes()).decode()
+    return (
+        f'<div style="text-align:center;margin:0 0 1rem 0;">'
+        f'<img src="data:image/png;base64,{encoded}" width="220" alt="phData" '
+        f'style="display:inline-block;filter:brightness(1.4) contrast(1.05);" />'
+        f"</div>"
+    )
 
 
 def check_credentials(username: str, password: str) -> bool:
@@ -22,11 +39,12 @@ def require_login() -> bool:
 
     _, col, _ = st.columns([0.75, 1.6, 0.75])
     with col:
+        logo_html = _login_logo_html()
         st.markdown(
-            """
+            f"""
+            {logo_html}
             <div class="login-brand" style="text-align:center;margin-bottom:1rem;">
-              <div style="font-size:2.5rem;line-height:1;">⚡</div>
-              <h1 style="font-size:1.4rem;font-weight:700;color:#fff;margin:0.5rem 0 0.25rem;">ETL Recovery Agent</h1>
+              <h1 style="font-size:1.4rem;font-weight:700;color:#fff;margin:0.25rem 0;">Autonomus ETL Recovery Agent</h1>
               <p style="color:#7a9fbf;font-size:0.9rem;margin:0;">Sign in</p>
             </div>
             """,

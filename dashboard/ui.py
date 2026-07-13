@@ -117,7 +117,7 @@ def render_app_sidebar() -> None:
     st.sidebar.markdown("**Navigation**")
     st.sidebar.page_link("pages/1_Dashboard.py", label="Dashboard", use_container_width=True)
     st.sidebar.page_link("pages/2_Pipelines.py", label="Pipelines", use_container_width=True)
-    st.sidebar.page_link("pages/3_Agent.py", label="Agent", use_container_width=True)
+    st.sidebar.page_link("pages/3_Agent.py", label="AI Agent", use_container_width=True)
     st.sidebar.markdown("---")
     logout_button()
 
