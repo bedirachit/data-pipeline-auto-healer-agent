@@ -44,7 +44,7 @@ def hide_chrome_for_login() -> None:
             [data-testid="stSidebarNav"] { display: none !important; }
             button[kind="header"] { display: none !important; }
             [data-testid="collapsedControl"] { display: none !important; }
-            .block-container { padding-top: 2rem !important; max-width: 720px !important; }
+            .block-container { padding-top: 2rem !important; max-width: 860px !important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -111,7 +111,7 @@ def render_app_sidebar() -> None:
     """Sidebar branding, navigation, and sign-out."""
     from dashboard.auth import logout_button
 
-    st.sidebar.markdown("### ⚡ Auto-Healer")
+    st.sidebar.markdown("### ⚡ ETL Recovery Agent")
     st.sidebar.caption(f"Signed in as **{st.session_state.get('username', 'admin')}**")
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Navigation**")

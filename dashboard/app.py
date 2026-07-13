@@ -8,7 +8,7 @@ from dashboard.auth import require_login
 from dashboard.ui import hide_chrome_for_login, inject_theme
 
 st.set_page_config(
-    page_title="Dashboard | Auto-Healer",
+    page_title="ETL Recovery Agent",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",

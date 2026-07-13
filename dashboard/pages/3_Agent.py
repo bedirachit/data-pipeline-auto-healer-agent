@@ -12,7 +12,7 @@ from agent.process_manager import get_status, start_agent, stop_agent
 from dashboard.auth import require_login
 from dashboard.ui import format_utc_datetime, inject_theme, page_header, render_app_sidebar
 
-st.set_page_config(page_title="Agent | Auto-Healer", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Agent | ETL Recovery Agent", page_icon="⚡", layout="wide")
 inject_theme()
 
 if not require_login():

@@ -13,7 +13,7 @@ from agent.watcher import watch
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Data Pipeline Auto-Healer Agent")
+    parser = argparse.ArgumentParser(description="ETL Recovery Agent")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("watch", help="Poll single pipeline (legacy env config)")

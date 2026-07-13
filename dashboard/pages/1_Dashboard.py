@@ -30,7 +30,7 @@ def _format_time_to_pr(sec_str: str) -> str:
     except (TypeError, ValueError):
         return "—"
 
-st.set_page_config(page_title="Dashboard | Auto-Healer", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Dashboard | ETL Recovery Agent", page_icon="⚡", layout="wide")
 inject_theme()
 
 if not require_login():

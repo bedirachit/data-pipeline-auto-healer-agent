@@ -14,7 +14,7 @@ from agent.pipeline_registry import (
 from dashboard.auth import require_login
 from dashboard.ui import inject_theme, page_header, render_app_sidebar, render_pipeline_cards
 
-st.set_page_config(page_title="Pipelines | Auto-Healer", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Pipelines | ETL Recovery Agent", page_icon="⚡", layout="wide")
 inject_theme()
 
 if not require_login():

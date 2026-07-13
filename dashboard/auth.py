@@ -20,14 +20,14 @@ def require_login() -> bool:
 
     hide_chrome_for_login()
 
-    _, col, _ = st.columns([1, 1.2, 1])
+    _, col, _ = st.columns([0.75, 1.6, 0.75])
     with col:
         st.markdown(
             """
             <div class="login-brand" style="text-align:center;margin-bottom:1rem;">
               <div style="font-size:2.5rem;line-height:1;">⚡</div>
-              <h1 style="font-size:1.4rem;font-weight:700;color:#fff;margin:0.5rem 0 0.25rem;">Pipeline Auto-Healer</h1>
-              <p style="color:#7a9fbf;font-size:0.9rem;margin:0;">Admin sign in</p>
+              <h1 style="font-size:1.4rem;font-weight:700;color:#fff;margin:0.5rem 0 0.25rem;">ETL Recovery Agent</h1>
+              <p style="color:#7a9fbf;font-size:0.9rem;margin:0;">Sign in</p>
             </div>
             """,
             unsafe_allow_html=True,

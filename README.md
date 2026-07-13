@@ -1,4 +1,4 @@
-# Data Pipeline Auto-Healer Agent Demo
+# ETL Recovery Agent Demo
 
 AI-driven pipeline monitor and fixer for a **Snowflake + dbt** ecommerce ETL demo. A Claude Agent SDK agent detects failures, diagnoses root cause, opens GitHub PRs with fixes, and supports human-in-the-loop merge before re-running dbt.
 
