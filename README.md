@@ -2,6 +2,12 @@
 
 Watches a Snowflake + dbt sales pipeline, diagnoses a failed run, and opens a GitHub pull request with a model fix. You merge the pull request. The agent does not merge or redeploy for you.
 
+## Architecture
+
+The Streamlit dashboard starts the watcher and reads local CSV and log files. The watcher polls Snowflake execution history. On a new failure it starts one Claude ReAct episode. Tool calls go through an in-process MCP server to Snowflake (read) and GitHub (pull request). If that call fails, the rule healer opens the pull request directly.
+
+![Data Pipeline Auto-Healer architecture](<Data Pipeline Auto-Healer Architecture.png>)
+
 Every command below is run from the repository root with the virtual environment activated.
 
 ## Run it
