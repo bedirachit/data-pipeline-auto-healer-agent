@@ -12,6 +12,7 @@ from pipeline.scripts.inject_failure import run_sql_file
 
 
 def main() -> None:
+    """Rename ``qty`` to ``quantity`` so the baseline model fails on the next run."""
     run_sql_file(sql_path("scenarios", "inject_schema_drift.sql"))
     print("Schema drift injected. Re-run pipeline to trigger failure.")
 

@@ -12,10 +12,12 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 
 def env(key: str, default: str = "") -> str:
+    """Return an environment variable, or ``default`` when it is unset."""
     return os.getenv(key, default)
 
 
 def snowflake_connect_kwargs() -> dict:
+    """Connection kwargs for setup, seed, and failure-injection scripts."""
     account = env("SNOWFLAKE_ACCOUNT")
     if not account:
         raise ValueError("SNOWFLAKE_ACCOUNT is required in .env")
@@ -31,10 +33,12 @@ def snowflake_connect_kwargs() -> dict:
 
 
 def sql_path(*parts: str) -> Path:
+    """Path under ``pipeline/sql``."""
     return PROJECT_ROOT / "pipeline" / "sql" / Path(*parts)
 
 
 def data_path(*parts: str) -> Path:
+    """Path under ``pipeline/data``."""
     return PROJECT_ROOT / "pipeline" / "data" / Path(*parts)
 
 

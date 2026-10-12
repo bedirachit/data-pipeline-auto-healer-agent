@@ -7,4 +7,6 @@ sources:
     schema: DEMO_SCHEMA
     tables:
       - name: raw_sales
+        description: Staging sales facts loaded by pipeline/scripts/seed_data.py
       - name: dim_product
+        description: Product lookup loaded with the sales seed

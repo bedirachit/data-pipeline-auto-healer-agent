@@ -16,6 +16,7 @@ _seen: set[tuple[str, str]] = set()
 
 
 def _error_summary(row: dict) -> str:
+    """First error line from a Snowflake failure row, truncated for logs."""
     msg = str(row.get("error_message", ""))
     for line in msg.splitlines():
         line = line.strip()
@@ -28,6 +29,7 @@ def poll_once(
     on_failure: Callable[[dict, PipelineConfig], None],
     since: datetime,
 ) -> int:
+    """Poll every enabled pipeline. Returns how many new failures were handled."""
     pipelines = list_pipelines(enabled_only=True)
     if not pipelines:
         log("watch", "No enabled pipelines in registry — add pipelines via dashboard")
@@ -60,6 +62,11 @@ def watch_multi(
     on_failure: Callable[[dict, PipelineConfig], None],
     interval_sec: int | None = None,
 ) -> None:
+    """Poll every registered pipeline until the process is stopped.
+
+    Each pipeline keeps its own seen set so the same query id on two projects
+    is treated as two incidents.
+    """
     interval = interval_sec or int(env("AGENT_POLL_INTERVAL_SEC", "30"))
     started_at = datetime.now(timezone.utc)
     pipelines = list_pipelines(enabled_only=True)

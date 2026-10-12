@@ -20,15 +20,18 @@ SCENARIOS = {
 
 
 def run(cmd: list[str], check: bool = True) -> None:
+    """Run a demo step from the repository root."""
     print(f"\n>> {' '.join(cmd)}")
     subprocess.run(cmd, cwd=ROOT, check=check)
 
 
 def step(title: str) -> None:
+    """Print a section banner so the live demo is easy to follow."""
     print(f"\n{'=' * 60}\n{title}\n{'=' * 60}")
 
 
 def print_mttr() -> None:
+    """Show the last audit events written while the healer opened a pull request."""
     if not AUDIT_LOG.exists():
         print("No audit log yet.")
         return
@@ -39,6 +42,7 @@ def print_mttr() -> None:
 
 
 def main() -> None:
+    """Reset the demo, inject one scenario, heal once, then wait for a manual merge."""
     parser = argparse.ArgumentParser(description="ETL Recovery Agent Demo")
     parser.add_argument("--scenario", choices=["1", "2", "3"], help="Failure scenario")
     parser.add_argument("--skip-baseline", action="store_true")

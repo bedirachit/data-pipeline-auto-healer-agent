@@ -1,2 +1,2 @@
--- Scenario 2: Divide by zero - replace transform with failing expression
--- Run via inject_divide_by_zero.py which patches sales_summary.sql
+-- Scenario 2 is applied by inject_divide_by_zero.py, which overwrites sales_summary.sql.
+-- user_id 100 makes (user_id - 100) zero and Snowflake fails the model.

@@ -25,6 +25,7 @@ group by user_id
 
 
 def main() -> None:
+    """Drop the comma after ``user_id`` so dbt fails at compilation."""
     patch_dbt_model(FAILING_MODEL)
     print("SQL syntax error injected. Re-run dbt to trigger failure.")
 

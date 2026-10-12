@@ -1,210 +1,283 @@
-# ETL Recovery Agent Demo
+# Data Pipeline Auto-Healer Agent
 
-AI-driven pipeline monitor and fixer for a **Snowflake + dbt** ecommerce ETL demo. A Claude Agent SDK agent detects failures, diagnoses root cause, opens GitHub PRs with fixes, and supports human-in-the-loop merge before re-running dbt.
+Watches a Snowflake + dbt sales pipeline, diagnoses a failed run, and opens a GitHub pull request with a model fix. You merge the pull request. The agent does not merge or redeploy for you.
 
-## Architecture
+Every command below is run from the repository root with the virtual environment activated.
 
-```
-pipeline/dbt/   → dbt project (models, sources, profiles.yml)
-pipeline/sql/   → Snowflake DDL + failure injection SQL
-pipeline/data/  → CSV seed data
-agent/          → Claude Agent SDK watcher, MCP tools, safety hooks
-demo/           → Playwright setup + interactive demo runner
-```
+## Run it
 
-## Prerequisites
-
-- Python 3.10+
-- dbt Core + dbt-snowflake (`pip install dbt-snowflake`)
-- Snowflake account with user `DATAAGENT`
-- GitHub PAT (`repo` scope) and Anthropic API key (for full agent)
-
-## One-time setup
+### 1. Install
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 copy .env.example .env
-# Fill SNOWFLAKE_PASSWORD, GITHUB_TOKEN, ANTHROPIC_API_KEY
+```
+
+`pip install` puts `dbt` on the virtualenv path. If a later command says `dbt` is not recognized, the virtualenv is not active.
+
+### 2. Fill in `.env`
+
+Open `.env` and set these before anything else:
+
+```env
+SNOWFLAKE_ACCOUNT=your_account_identifier
+SNOWFLAKE_USER=DATAAGENT
+SNOWFLAKE_PASSWORD=your_password
+GITHUB_TOKEN=github_pat_...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+`SNOWFLAKE_ACCOUNT` is the identifier in your Snowflake URL (`https://<account>.snowflakecomputing.com`), not the vanity URL. The other Snowflake settings in `.env.example` already match this demo (`COMPUTE_WH`, `ACCOUNTADMIN`, `DEMO_DB`, `DEMO_SCHEMA`).
+
+`GITHUB_TOKEN` needs access to the pipeline repo in `GITHUB_REPO` (contents and pull requests). `ANTHROPIC_API_KEY` is used by the Claude agent. If that call fails, the rule-based healer still opens the pull request, as long as `GITHUB_TOKEN` is set.
+
+Leave `ADMIN_USERNAME` / `ADMIN_PASSWORD` as `admin` / `admin` until you open the dashboard. Change the password before anyone else can reach it.
+
+### 3. Create the Snowflake demo and prove dbt works
+
+```powershell
 python pipeline/scripts/setup_all.py
 ```
 
-`setup_all.py` creates schema, seeds data, runs `dbt run --select sales_summary`, and verifies rows in Snowflake.
+This creates `DEMO_DB.DEMO_SCHEMA`, loads the CSVs, runs `sales_summary`, and checks both tables have rows. It is done when you see `Setup complete — dbt pipeline validated.`
 
-### Playwright (optional — capture Snowflake account)
+Check in Snowflake:
 
-```powershell
-cd demo
-npm install
-npm run setup:snowflake
+```sql
+SELECT * FROM DEMO_DB.DEMO_SCHEMA.sales_summary ORDER BY user_id;
 ```
 
-## Run the pipeline
+### 4. Run Streamlit
+
+Start the dashboard from the repo root, with the virtualenv still active:
 
 ```powershell
-python pipeline/scripts/run_pipeline.py --expect success
+python -m streamlit run dashboard/app.py
 ```
 
-Equivalent to:
+Use `python -m streamlit` so this works even when the `streamlit` command is not on your PATH.
 
-```powershell
-cd pipeline/dbt
-set DBT_PROFILES_DIR=.
-dbt run --select sales_summary
+Streamlit prints a local URL. Open it in a browser. It is usually:
+
+```text
+http://localhost:8501
 ```
 
-## Demo scenarios
+Sign in with the values from `.env`. The sample file uses:
 
-| # | Scenario | Injection | Agent fix (PR to dbt model) |
-|---|----------|-----------|---------------------------|
-| 1 | Schema drift | Renames `qty` → `quantity` in Snowflake | Updates `sum(qty)` → `sum(quantity)` in model |
-| 2 | Divide by zero | Broken model with `/ (user_id - 100)` | Adds `nullif(..., 0)` |
-| 3 | SQL syntax | Missing comma in SELECT | Fixes SQL syntax |
+```text
+username: admin
+password: admin
+```
 
-### Full interactive demo
+Leave this terminal running. The app stops when you press Ctrl+C.
+
+| Page | Use it to |
+|---|---|
+| Dashboard | See open failures, pull requests, and time-to-PR |
+| Pipelines | Register a dbt project. Test connection, then Save |
+| Agent | Start or stop the watcher, and read its log |
+
+Pipeline form for this demo:
+
+| Field | Value |
+|---|---|
+| DBT Project Name | `SNOWFLAKES_SALES` |
+| Snowflake Database | `DEMO_DB` |
+| Snowflake Schema | `DEMO_SCHEMA` |
+| GitHub Repo URL | `https://github.com/bedirachit/snowflake-sales-aggregate-dbt` |
+| Model File Path | `pipeline/dbt/models/marts/sales_summary.sql` |
+
+Click **Test Connection**, then **Save**. On the Agent page, click start. The watcher only reacts to failures that happen after it starts, so inject the failure from a second terminal (step 6) after the agent is running.
+
+### 5. Break the pipeline and let the agent open a pull request
+
+One command runs the whole demo. It resets the baseline, injects a failure, runs dbt so it fails, then calls the healer:
 
 ```powershell
 python demo/run_demo.py --scenario 1
 ```
 
-### Agent
+| `--scenario` | What breaks | What the pull request changes |
+|---|---|---|
+| `1` | Renames column `qty` to `quantity` | `sum(qty)` becomes `sum(quantity)` |
+| `2` | Divides by `(user_id - 100)`, which is 0 for user 100 | Wraps the divisor in `nullif(..., 0)` |
+| `3` | Drops the comma after `user_id` | Puts the comma back |
 
-The watcher ignores failures from before agent start. Only new failures after `watch` begins trigger healing.
+The script pauses with `After merging PR, press Enter to re-run dbt...`. Open the pull request URL printed just above that line, merge it, pull the model back into this repo if you want the local file updated, then press Enter. The last step runs dbt again and expects success.
+
+Scenario 1 changes the Snowflake column. After that demo, put the column and model back:
 
 ```powershell
-python -m agent.main watch-multi          # poll ALL registered pipelines
+python pipeline/scripts/reset_baseline.py
+```
+
+### Same demo, one step at a time
+
+Use this when you want to see each stage instead of `run_demo.py`.
+
+```powershell
+python pipeline/scripts/reset_baseline.py
+python pipeline/scripts/run_pipeline.py --expect success
+python pipeline/scripts/inject_schema_drift.py
+python pipeline/scripts/run_pipeline.py --expect failed
 python -m agent.main heal-once
-python -m agent.main list-failures
 ```
 
-Register pipelines via the **dashboard** (recommended) or edit `data/pipelines.csv` directly.
+`heal-once` looks at failures from the last two hours and opens one pull request. A successful run prints a result dict that includes the pull request URL. `No recent failures found` means dbt did not fail, or the failure is older than two hours.
 
-## Admin Dashboard (Streamlit)
+`run_pipeline.py --expect failed` exits 0 when dbt fails. That is the point of `--expect failed`.
 
-Futuristic web UI for pipeline management, KPIs, and agent control.
+Swap the inject script for the other scenarios:
 
 ```powershell
-pip install -r requirements.txt
-# Set ADMIN_USERNAME and ADMIN_PASSWORD in .env
-python -m streamlit run dashboard/app.py
+python pipeline/scripts/inject_divide_by_zero.py
+python pipeline/scripts/inject_sql_syntax.py
 ```
 
-If `streamlit` is not on PATH, always use `python -m streamlit run ...` instead.
+### 6. Leave the agent running
 
-Default login: `admin` / `admin` (change `ADMIN_PASSWORD` in `.env`).
+`heal-once` handles one failure and exits. To keep watching, start the watcher **before** you inject the next failure. It ignores failures that already exist.
 
-| Page | Features |
-|------|----------|
-| **Dashboard** | Tracked pipelines, open failures, PRs opened, deployed fixes, avg time-to-PR, green/red status |
-| **Pipelines** | Add dbt pipeline (name, DB, schema, GitHub URL, model path), test connection, save |
-| **Agent Control** | Start/stop multi-pipeline watcher, view filtered chat logs (user/assistant text only) |
-
-Dashboard data is stored in `data/incidents.csv` and `data/pipelines.csv`.
-
-Set in `.env`:
-
-```env
-GITHUB_REPO=bedirachit/snowflake-sales-aggregate-dbt
-DBT_PROJECT_OBJECT=DEMO_DB.DEMO_SCHEMA.SNOWFLAKES_SALES
+```powershell
+python -m agent.main watch-multi
 ```
 
-The watcher polls `DBT_PROJECT_EXECUTION_HISTORY` for each registered pipeline.
+In a second terminal (same virtualenv, same repo root):
 
-## Periodic dbt runs (Snowflake)
+```powershell
+python pipeline/scripts/inject_sql_syntax.py
+python pipeline/scripts/run_pipeline.py --expect failed
+```
 
-After deploying the dbt project in Snowsight, schedule it with a **Snowflake Task**:
+The first terminal logs `New failure` and then `PR opened`. Stop the watcher with Ctrl+C.
+
+`watch-multi` reads `data/pipelines.csv`. The first time any agent command runs, that file is created with one pipeline from `.env`:
+
+| Field | Default |
+|---|---|
+| dbt project name | last part of `DBT_PROJECT_OBJECT` (`SNOWFLAKES_SALES`) |
+| database / schema | `DEMO_DB` / `DEMO_SCHEMA` |
+| GitHub repo | `GITHUB_REPO` |
+| model file | `pipeline/dbt/models/marts/sales_summary.sql` |
+
+Other commands:
+
+```powershell
+python -m agent.main list-failures   # failures from the last two hours; does not heal
+python -m agent.main watch           # one project, using DBT_PROJECT_OBJECT only
+```
+
+## Agent pattern
+
+The healer that talks to Claude is a **ReAct** loop: reason, act with a tool, observe the tool result, and repeat until the task is done. This repo does not parse `Thought:` / `Action:` text itself. `ClaudeSDKClient` in `agent/agent_runner.py` runs that loop. Each model turn can include reasoning and a tool call. The SDK executes the tool and feeds the result back as the next observation.
+
+One failure is one episode. The watcher is not part of the loop. It only polls Snowflake and starts the episode with the error and the current model SQL. The system prompt then asks the model to diagnose, patch, and open one pull request.
+
+```mermaid
+flowchart TD
+  Watcher[Watcher polls Snowflake] -->|one failure, one prompt| Reason[Model reasons]
+  Reason -->|tool call| Act[describe_table, get_lineage, or create_fix_pr]
+  Act -->|tool result| Reason
+  Reason -->|create_fix_pr succeeds| Stop[Episode ends]
+  Reason -->|SDK error| Rules[Rule healer, one shot]
+```
+
+A typical episode looks like this:
+
+1. **Reason.** The error names a missing column, a divide-by-zero, or a syntax error.
+2. **Act.** Call `describe_table` on `raw_sales`.
+3. **Observe.** The live column list comes back. `get_lineage` is optional.
+4. **Reason.** Decide the SQL edit from that schema and the model already in the prompt.
+5. **Act.** Call `create_fix_pr` with the patched file. Hooks reject the call unless the branch starts with `auto-heal/` and the pull request body cites the incident id.
+6. **Stop.** The model has no further tool call. A person merges the pull request. There is no second agent and no automatic retry.
+
+If the Claude call throws, `heal_with_rules` runs once. That path is not ReAct. It matches the error with regular expressions (renamed column, divide by zero, missing comma) and opens the pull request directly.
+
+## What the agent is allowed to do
+
+The watcher finds the failure and passes the error plus the current model SQL to the healer. The healer may call:
+
+| Tool | What it does |
+|---|---|
+| `describe_table` | Read Snowflake column names |
+| `get_lineage` | Read upstream tables |
+| `create_fix_pr` | Push an `auto-heal/` branch and open a pull request |
+
+It does not run dbt, execute SQL, or merge. Tool calls are appended to `agent/audit/incidents.jsonl`.
+
+## How a failure gets to the agent
+
+```mermaid
+flowchart LR
+  dbt[dbt run] -->|fails| History[Snowflake query history]
+  History -->|poll| Watcher[watch-multi or heal-once]
+  Watcher -->|patch model| PR[GitHub pull request]
+  PR -->|you merge| dbt
+```
+
+Local `run_pipeline.py` is enough for the demo. The agent also sees failures from a dbt project deployed in Snowflake (`EXECUTE DBT PROJECT`). That path is optional and is described under [Schedule runs in Snowflake](#schedule-runs-in-snowflake).
+
+Pull requests go to the GitHub repo on the pipeline, not to this agent repo. This repo is the agent, the dashboard, and the local dbt project used by the scripts.
+
+## Schedule runs in Snowflake
+
+Skip this for the local demo. Use it when the dbt project is deployed in Snowsight and a task should run it.
+
+Snowflake's dbt workspace does not expand `{{ env_var(...) }}`. The profile it reads is `pipeline/dbt/profiles.yml`, which uses literal values. Local scripts use `pipeline/dbt_local/profiles.yml`, which reads `.env`. The project name in `dbt_project.yml` must stay `demo_sales_etl` (underscores only).
+
+After deploy, confirm the object name:
 
 ```sql
--- See pipeline/sql/snowflake/schedule_dbt_task.sql
+SHOW DBT PROJECTS IN SCHEMA DEMO_DB.DEMO_SCHEMA;
+```
+
+Then schedule it (`pipeline/sql/snowflake/schedule_dbt_task.sql`):
+
+```sql
 CREATE OR ALTER TASK run_sales_dbt
   WAREHOUSE = COMPUTE_WH
   SCHEDULE = '6 HOUR'
 AS
-  EXECUTE DBT PROJECT DEMO_DB.DEMO_SCHEMA.demo_sales_etl
+  EXECUTE DBT PROJECT DEMO_DB.DEMO_SCHEMA.SNOWFLAKES_SALES
     ARGS = 'run --select sales_summary --target dev';
 
 ALTER TASK run_sales_dbt RESUME;
 ```
 
-Replace `demo_sales_etl` with the name from `SHOW DBT PROJECTS IN SCHEMA DEMO_DB.DEMO_SCHEMA`.
+Replace `SNOWFLAKES_SALES` with the name from `SHOW DBT PROJECTS`. Set `DBT_PROJECT_OBJECT` in `.env` to that same `database.schema.name`.
 
-Alternatively use Snowsight: **Data** → **dbt Projects** → your project → **Schedule a dbt run**.
+## If a command fails
 
-## End-to-end flow
+| What you see | What to do |
+|---|---|
+| `SNOWFLAKE_ACCOUNT is empty` | Set it in `.env`, then run the command again from the repo root |
+| `dbt` is not recognized | Activate `.venv` and rerun |
+| `dbt run failed` during `setup_all.py` | Check warehouse, role, and password. The user needs to create `DEMO_DB` |
+| `No recent failures found` | Run an inject script, then `run_pipeline.py --expect failed`, then `heal-once` |
+| Watcher is running but nothing happens | It ignores old failures. Inject and rerun dbt **after** the watcher starts |
+| Agent logs a Claude error, then continues | Expected fallback. A pull request still opens when `GITHUB_TOKEN` is valid |
+| Login to the dashboard fails | Username and password are `ADMIN_USERNAME` and `ADMIN_PASSWORD` in `.env` |
+| `streamlit` is not recognized | Run `python -m streamlit run dashboard/app.py` from the repo root with the virtualenv active |
 
-```mermaid
-flowchart LR
-  Task[Snowflake Task] -->|EXECUTE DBT PROJECT| SF[Snowflake dbt run]
-  SF -->|FAIL| QH[QUERY_HISTORY]
-  QH -->|poll| Agent[agent.main watch]
-  Agent -->|create_fix_pr| GH[GitHub PR]
-  GH -->|merge| Redeploy[Redeploy in Snowsight]
-  Redeploy -->|execute_dbt_project| SF
-```
-
-1. Task runs dbt on schedule → failure lands in query history.
-2. Agent detects failure → opens PR on [snowflake-sales-aggregate-dbt](https://github.com/bedirachit/snowflake-sales-aggregate-dbt).
-3. You merge the PR → pull latest into Snowflake dbt workspace and redeploy.
-4. Agent or manual `EXECUTE DBT PROJECT` verifies the fix.
-
-## PR target (GitHub repo for fixes)
-
-PRs go to **https://github.com/bedirachit/snowflake-sales-aggregate-dbt** — not this agent repo.
-
-The agent patches:
-
-- `pipeline/dbt/models/marts/sales_summary.sql` (in that repo)
-
-This monorepo keeps a copy under [`pipeline/dbt/`](pipeline/dbt/) for local dev and demo injection scripts.
-
-## Agent MCP tools (Claude mode)
-
-Detection is handled by the watcher — the agent receives the error in its prompt.
-
-- `describe_table`, `get_lineage` — Snowflake read-only diagnosis
-- `create_fix_pr` — open fix PR on GitHub
-
-The agent cannot run dbt, execute SQL, or browse the repo. Current model SQL is passed in the prompt.
-
-## profiles.yml — important (Snowsight vs local)
-
-Snowflake **native dbt workspace does NOT support** `{{ env_var(...) }}` in `profiles.yml`.  
-If you see:
-
-`Role {{ env_var('SNOWFLAKE_ROLE', 'ACCOUNTADMIN') }} does not exist`
-
-use **literal values** in the Git repo that Snowflake reads:
-
-```yaml
-# pipeline/dbt/profiles.yml  (for Snowsight / Snowflake dbt Projects)
-demo_sales_etl:
-  target: dev
-  outputs:
-    dev:
-      type: snowflake
-      account: "snowflake"
-      user: "snowflake"
-      password: "snowflake"
-      role: ACCOUNTADMIN
-      database: DEMO_DB
-      warehouse: COMPUTE_WH
-      schema: DEMO_SCHEMA
-```
-
-Local CLI runs use [`pipeline/dbt_local/profiles.yml`](pipeline/dbt_local/profiles.yml) with `env_var` (via `.env`).
-
-Also ensure `dbt_project.yml` **name** uses underscores only (e.g. `demo_sales_etl`, not `snowflake-sales-aggregate-dbt`).
-
-
-```sql
-SELECT * FROM DEMO_DB.DEMO_SCHEMA.sales_summary ORDER BY user_id;
-SELECT COUNT(*) FROM DEMO_DB.DEMO_SCHEMA.raw_sales;
-```
-
-## Rollback
+## Tests
 
 ```powershell
-python pipeline/scripts/reset_baseline.py
-git revert <merge-commit>
+pytest pipeline/tests -q
 ```
+
+## Layout
+
+| Path | Purpose |
+|---|---|
+| `agent/` | Watcher, Claude agent, rule-based fallback, GitHub and Snowflake tools |
+| `dashboard/` | Streamlit UI |
+| `pipeline/dbt/` | dbt project, including the Snowsight `profiles.yml` |
+| `pipeline/dbt_local/` | Local dbt profile that reads `.env` |
+| `pipeline/scripts/` | Setup, seed, dbt run, inject, reset |
+| `pipeline/sql/` | DDL, inject SQL, scheduled task |
+| `pipeline/data/` | CSV seed data |
+| `demo/run_demo.py` | One-command failure and heal |
+| `data/` | `pipelines.csv` and `incidents.csv`, created on first run |

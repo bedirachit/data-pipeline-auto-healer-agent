@@ -1,3 +1,4 @@
+# Project name must use underscores. Snowflake rejects hyphens in dbt project names.
 name: demo_sales_etl
 version: 1.0.0
 config-version: 2

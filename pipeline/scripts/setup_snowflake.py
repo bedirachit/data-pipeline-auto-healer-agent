@@ -13,6 +13,7 @@ from pipeline.config import PROJECT_ROOT, snowflake_connect_kwargs, sql_path
 
 
 def run_sql_file(cursor, path: Path) -> None:
+    """Split a DDL file on semicolons and execute each statement."""
     statements = path.read_text(encoding="utf-8").split(";")
     for stmt in statements:
         cleaned = stmt.strip()
@@ -21,6 +22,7 @@ def run_sql_file(cursor, path: Path) -> None:
 
 
 def main() -> None:
+    """Create ``DEMO_DB.DEMO_SCHEMA`` and the source tables."""
     ddl = sql_path("ddl", "01_create_schema.sql")
     kwargs = snowflake_connect_kwargs()
     print(f"Connecting to Snowflake account {kwargs['account']}...")

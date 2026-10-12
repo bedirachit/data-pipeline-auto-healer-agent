@@ -26,6 +26,7 @@ DBT_MODEL_SELECT = "sales_summary"
 
 
 def env(key: str, default: str = "") -> str:
+    """Return an environment variable, or ``default`` when it is unset."""
     return os.getenv(key, default)
 
 
@@ -34,6 +35,7 @@ DBT_PROJECT_OBJECT = env("DBT_PROJECT_OBJECT", "DEMO_DB.DEMO_SCHEMA.SNOWFLAKES_S
 
 
 def require_env(key: str) -> str:
+    """Return an environment variable or raise if it is missing or empty."""
     value = env(key)
     if not value:
         raise ValueError(f"Missing required environment variable: {key}")
@@ -41,6 +43,7 @@ def require_env(key: str) -> str:
 
 
 def snowflake_connect_kwargs() -> dict:
+    """Connection kwargs for ``snowflake.connector.connect``."""
     return {
         "account": require_env("SNOWFLAKE_ACCOUNT"),
         "user": env("SNOWFLAKE_USER"),

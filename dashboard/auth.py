@@ -14,6 +14,7 @@ LOGO_PATH = Path(__file__).parent / "assets" / "phdata-logo.png"
 
 
 def _login_logo_html() -> str:
+    """Inline the logo as a data URI so the login page has no extra asset request."""
     if not LOGO_PATH.exists():
         return ""
     encoded = base64.b64encode(LOGO_PATH.read_bytes()).decode()
@@ -26,12 +27,14 @@ def _login_logo_html() -> str:
 
 
 def check_credentials(username: str, password: str) -> bool:
+    """Compare the form against ``ADMIN_USERNAME`` and ``ADMIN_PASSWORD``."""
     admin_user = env("ADMIN_USERNAME", "admin")
     admin_pass = env("ADMIN_PASSWORD", "admin")
     return username == admin_user and password == admin_pass
 
 
 def require_login() -> bool:
+    """Render the sign-in form until the session is authenticated."""
     if st.session_state.get("authenticated"):
         return True
 
@@ -44,7 +47,7 @@ def require_login() -> bool:
             f"""
             {logo_html}
             <div class="login-brand" style="text-align:center;margin-bottom:1rem;">
-              <h1 style="font-size:1.4rem;font-weight:700;color:#fff;margin:0.25rem 0;">Autonomus ETL Recovery Agent</h1>
+              <h1 style="font-size:1.4rem;font-weight:700;color:#fff;margin:0.25rem 0;">Autonomous ETL Recovery Agent</h1>
               <p style="color:#7a9fbf;font-size:0.9rem;margin:0;">Sign in</p>
             </div>
             """,
@@ -68,6 +71,7 @@ def require_login() -> bool:
 
 
 def logout_button() -> None:
+    """Clear the Streamlit session and return to the login form."""
     if st.sidebar.button("Sign out", use_container_width=True):
         st.session_state.clear()
         st.rerun()

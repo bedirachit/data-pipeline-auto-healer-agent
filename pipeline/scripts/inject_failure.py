@@ -13,6 +13,7 @@ from pipeline.config import DBT_MODEL, PROJECT_ROOT, snowflake_connect_kwargs, s
 
 
 def run_sql_file(path: Path) -> None:
+    """Execute each statement in a ``.sql`` file against the demo schema."""
     kwargs = snowflake_connect_kwargs()
     statements = path.read_text(encoding="utf-8").split(";")
     with snowflake.connector.connect(**kwargs) as conn:
@@ -25,5 +26,6 @@ def run_sql_file(path: Path) -> None:
 
 
 def patch_dbt_model(content: str) -> None:
+    """Overwrite the local ``sales_summary`` model with a failing version."""
     DBT_MODEL.write_text(content, encoding="utf-8")
     print(f"Patched {DBT_MODEL}")

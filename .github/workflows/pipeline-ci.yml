@@ -1,3 +1,5 @@
+# Parse the dbt project and run SQL unit tests when pipeline files change.
+# Snowflake credentials are placeholders; dbt parse does not open a connection.
 name: Pipeline CI
 
 on:

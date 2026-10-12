@@ -1,3 +1,4 @@
+-- Demo ecommerce schema. sales_summary is created by dbt, not by this script.
 CREATE DATABASE IF NOT EXISTS DEMO_DB;
 USE DATABASE DEMO_DB;
 CREATE SCHEMA IF NOT EXISTS DEMO_SCHEMA;

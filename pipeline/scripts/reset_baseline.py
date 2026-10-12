@@ -27,16 +27,19 @@ group by user_id
 
 
 def reset_dbt_model() -> None:
+    """Write the known-good ``sales_summary`` model back to disk."""
     DBT_MODEL.write_text(BASELINE_MODEL, encoding="utf-8")
     print(f"Reset {DBT_MODEL.name} to baseline.")
 
 
 def reset_schema(cursor, schema: str) -> None:
+    """Undo the schema-drift rename. Raises if the column is already ``qty``."""
     cursor.execute(f"ALTER TABLE {schema}.raw_sales RENAME COLUMN quantity TO qty")
     print("Renamed quantity -> qty (if needed).")
 
 
 def main() -> None:
+    """Restore the model and source column, drop the mart, and reseed."""
     kwargs = snowflake_connect_kwargs()
     schema = kwargs["schema"]
     db = kwargs["database"]

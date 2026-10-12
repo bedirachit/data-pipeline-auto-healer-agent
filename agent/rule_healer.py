@@ -200,6 +200,11 @@ def heal_with_rules(
     failure: dict[str, Any],
     pipeline: PipelineConfig | None = None,
 ) -> dict[str, Any] | None:
+    """Match a known failure pattern, patch the model, and open a pull request.
+
+    Tried in order: renamed column, divide by zero, missing comma. Returns the
+    GitHub result, or ``None`` when no rule matches.
+    """
     error = failure.get("error_message", "")
     query_id = failure.get("query_id", "unknown")
     pipeline_id = failure.get("pipeline_id", "")

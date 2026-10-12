@@ -25,6 +25,7 @@ group by user_id
 
 
 def main() -> None:
+    """Replace the mart with a divisor that is zero when ``user_id`` is 100."""
     patch_dbt_model(FAILING_MODEL)
     print("Divide-by-zero model injected. Re-run dbt to trigger failure.")
 

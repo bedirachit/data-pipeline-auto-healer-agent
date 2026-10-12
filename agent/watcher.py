@@ -14,6 +14,7 @@ _seen: set[str] = set()
 
 
 def _error_summary(row: dict) -> str:
+    """First error line from a Snowflake failure row, truncated for logs."""
     msg = str(row.get("error_message", ""))
     for line in msg.splitlines():
         line = line.strip()
@@ -23,6 +24,7 @@ def _error_summary(row: dict) -> str:
 
 
 def poll_once(on_failure: Callable[[dict], None], since: datetime) -> int:
+    """Handle failures newer than ``since``. Returns how many were new."""
     failures = snowflake_tools.get_recent_failures(minutes=60, limit=20, since=since)
     new_count = 0
     for row in failures:
@@ -37,6 +39,11 @@ def poll_once(on_failure: Callable[[dict], None], since: datetime) -> int:
 
 
 def watch(on_failure: Callable[[dict], None], interval_sec: int | None = None) -> None:
+    """Poll the env-configured dbt project until the process is stopped.
+
+    Failures already in history are marked seen so a restart does not reopen
+    pull requests for old incidents.
+    """
     interval = interval_sec or int(env("AGENT_POLL_INTERVAL_SEC", "30"))
     started_at = datetime.now(timezone.utc)
     project = env("DBT_PROJECT_OBJECT")

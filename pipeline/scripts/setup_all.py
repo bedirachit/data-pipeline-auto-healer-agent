@@ -13,6 +13,7 @@ from pipeline.config import env, snowflake_connect_kwargs
 
 
 def require_account() -> None:
+    """Stop early when ``.env`` has no Snowflake account identifier."""
     if not env("SNOWFLAKE_ACCOUNT"):
         raise SystemExit(
             "SNOWFLAKE_ACCOUNT is empty in .env.\n"
@@ -21,11 +22,13 @@ def require_account() -> None:
 
 
 def run(cmd: list[str]) -> None:
+    """Run a setup step from the repository root and stop on failure."""
     print(f">> {' '.join(cmd)}")
     subprocess.run(cmd, cwd=ROOT, check=True)
 
 
 def verify_snowflake_data() -> None:
+    """Confirm seed and dbt both produced rows before declaring setup done."""
     import snowflake.connector
 
     kwargs = snowflake_connect_kwargs()
@@ -45,6 +48,7 @@ def verify_snowflake_data() -> None:
 
 
 def main() -> None:
+    """Create schema, load CSVs, run dbt, and check row counts."""
     require_account()
     run([sys.executable, str(ROOT / "pipeline/scripts/setup_snowflake.py")])
     run([sys.executable, str(ROOT / "pipeline/scripts/seed_data.py")])

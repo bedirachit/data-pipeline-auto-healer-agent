@@ -13,6 +13,7 @@ from agent.watcher import watch
 
 
 def main() -> None:
+    """Dispatch ``watch``, ``watch-multi``, ``heal-once``, or ``list-failures``."""
     parser = argparse.ArgumentParser(description="ETL Recovery Agent")
     sub = parser.add_subparsers(dest="command", required=True)
 

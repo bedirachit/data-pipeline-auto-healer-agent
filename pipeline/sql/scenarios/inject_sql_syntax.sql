@@ -1,2 +1,2 @@
--- Scenario 3: SQL syntax error - missing comma
--- Applied via inject_sql_syntax.py which patches sales_summary.sql
+-- Scenario 3 is applied by inject_sql_syntax.py, which overwrites sales_summary.sql.
+-- The injected SELECT list omits the comma after user_id.

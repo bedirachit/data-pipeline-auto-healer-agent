@@ -32,11 +32,13 @@ def format_utc_datetime(value: str | datetime | None, *, include_seconds: bool =
 
 
 def inject_theme() -> None:
+    """Apply ``theme.css`` to the current Streamlit page."""
     css = THEME_PATH.read_text(encoding="utf-8")
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 
 def hide_chrome_for_login() -> None:
+    """Hide sidebar and header controls while the login form is showing."""
     st.markdown(
         """
         <style>
@@ -123,6 +125,7 @@ def render_app_sidebar() -> None:
 
 
 def page_header(title: str, subtitle: str = "") -> None:
+    """Render the page title and optional subtitle."""
     st.markdown(f'<p class="hero-title">{title}</p>', unsafe_allow_html=True)
     if subtitle:
         st.markdown(f'<p class="subtitle">{subtitle}</p>', unsafe_allow_html=True)

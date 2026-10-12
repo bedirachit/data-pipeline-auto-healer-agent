@@ -14,6 +14,7 @@ from pipeline.config import DBT_MODEL_SELECT, DBT_PROJECT_DIR, dbt_env
 
 
 def run_dbt(select: str = DBT_MODEL_SELECT) -> subprocess.CompletedProcess[str]:
+    """Run ``dbt run --select`` with the local profile directory."""
     cmd = ["dbt", "run", "--select", select]
     print(f">> {' '.join(cmd)} (cwd={DBT_PROJECT_DIR})")
     return subprocess.run(
@@ -26,6 +27,7 @@ def run_dbt(select: str = DBT_MODEL_SELECT) -> subprocess.CompletedProcess[str]:
 
 
 def last_run_failed() -> bool:
+    """True when the latest ``target/run_results.json`` contains a failed node."""
     results_path = DBT_PROJECT_DIR / "target" / "run_results.json"
     if not results_path.exists():
         return False
@@ -37,6 +39,7 @@ def last_run_failed() -> bool:
 
 
 def main() -> None:
+    """Run dbt and exit non-zero when the result does not match ``--expect``."""
     parser = argparse.ArgumentParser(description="Run dbt pipeline")
     parser.add_argument("--select", default=DBT_MODEL_SELECT)
     parser.add_argument("--expect", choices=["success", "failed"], default="success")

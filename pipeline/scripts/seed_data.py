@@ -14,6 +14,7 @@ from pipeline.config import data_path, snowflake_connect_kwargs
 
 
 def insert_csv(cursor, table: str, csv_file: Path) -> None:
+    """Replace ``table`` with the rows from a headered CSV. Avoids a Snowflake stage."""
     cursor.execute(f"TRUNCATE TABLE IF EXISTS {table}")
     with csv_file.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -29,6 +30,7 @@ def insert_csv(cursor, table: str, csv_file: Path) -> None:
 
 
 def main() -> None:
+    """Reload ``raw_sales`` and ``dim_product`` and print the new row counts."""
     kwargs = snowflake_connect_kwargs()
     schema = kwargs["schema"]
 

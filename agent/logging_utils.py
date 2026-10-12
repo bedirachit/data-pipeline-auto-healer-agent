@@ -8,6 +8,7 @@ from agent.config import CHAT_LOG
 
 
 def log(stage: str, message: str) -> None:
+    """Print a UTC-stamped line. ``stage`` is a short label such as watch or heal."""
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     print(f"[{ts}] [{stage}] {message}", flush=True)
 

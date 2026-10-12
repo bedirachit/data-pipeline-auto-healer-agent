@@ -17,10 +17,12 @@ SCENARIOS = {
 
 
 def run(script: Path) -> None:
+    """Execute a pipeline script and stop the scenario if it fails."""
     subprocess.run([sys.executable, str(script)], check=True, cwd=ROOT)
 
 
 def main() -> None:
+    """Reset, run a healthy pipeline, inject scenario 1, 2, or 3, then re-run dbt."""
     if len(sys.argv) < 2 or sys.argv[1] not in SCENARIOS:
         print("Usage: python demo/scenarios/run_scenario.py [1|2|3]")
         sys.exit(1)

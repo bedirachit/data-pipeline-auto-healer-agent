@@ -1,1 +1,1 @@
-"""ETL Recovery Agent package."""
+"""Watcher, healer, and MCP tools for Snowflake + dbt pipeline recovery."""

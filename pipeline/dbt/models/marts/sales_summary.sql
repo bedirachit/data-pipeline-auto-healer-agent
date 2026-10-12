@@ -1,3 +1,5 @@
+-- Aggregate raw_sales to one row per user.
+-- The healer patches this file when a demo failure is injected.
 -- demo_sales_etl
 {{ config(
     materialized='table',
